@@ -117,7 +117,14 @@ body {
     display: block;
 }
 
-
+#status {
+    z-index: 10;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    color: #FFF;
+    width: 100%;
+}
 
 
 

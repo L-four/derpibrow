@@ -14,6 +14,7 @@
   		url: 'http://www.derpiboo.ru',	// website to get pics
   		height: $(window).height(),	
   		width: $(window).width(),
+  		statusID: '#status',
   		mainID: '#main', // main div to opreate in
   		preloadID: '#others', // pre load images into this div
   		preload: 3, // number of images to preload
@@ -81,6 +82,9 @@
   			}
   			return false;
   		}
+  		this.length = function () {
+  			return this.list.length;
+  		}
   	};
 
   	var cache = {
@@ -101,7 +105,7 @@
   			this.data[id] = data;
   		},
   		length: function () {
-  			return this.data.length;
+  			return this.ids.length();
   		},
   		getCurrent: function () {
   			return this.get(this.ids.current());
@@ -137,12 +141,47 @@
 			else {
 				this.parent.next();
 			}
+			this.parent.status.updatePageNum(this.page, 'idk');
 			console.log(cache);
 		}
 		this.readPosts = this.readPosts.bind(this);
 		this.send = function () {
 			this.getPosts(endPoint(settings, 'images', this.page));
 		}
+  	}
+
+  	var Status = function (parent, statusID) {
+  		this.parent = parent;
+  		this.statusID = statusID;
+  		this.curPage = 0;
+  		this.maxPages = 0;
+  		this.curImage = 0;
+  		this.maxImages = 0;
+  		this.imageID = 0;
+  		this.el = $(statusID);
+  		this.updatePageNum = function(cur, max) {
+  			this.curPage = cur;
+  			this.maxPages = max;
+  			this.draw();
+  		}
+  		this.updateImageNum = function(cur, max) {
+  			this.curImage = cur;
+  			this.maxImages = max;
+  			this.draw();
+  		}
+  		this.updateImageID = function(id) {
+  			this.imageID = id;
+  			this.draw();
+  		}
+  		this.draw = function () {
+  			this.el.text(
+  			'Page ' + this.curPage + '/' + this.maxPages
+  			+ '     '
+  			+ 'Image ' + this.curImage + '/' + this.maxImages
+  			+ '     '
+  			+ 'id_number:' + this.imageID 
+  			);
+  		}
   	}
 
   	
@@ -188,10 +227,13 @@
 		this.width = settings.width;
 		this.current = null;
 		this.preloader = new PreLoader(this, settings.preloadID, settings.preload);
+		this.status = new Status(this, settings.statusID);
 		this.updateMainImage = function (img) {
 			if (typeof img == 'undefined') {
 				console.log(cache);
+				return;
 			}
+			this.status.updateImageID(img.id_number);
 			console.log(img);
 			this.current = img.id_number;
 			var main = $(this.mainID);
@@ -213,6 +255,7 @@
 			if (cache.ids.next()) {
 				this.updateMainImage(cache.getCurrent());
 				this.preloader.load();
+				this.status.updateImageNum(cache.ids.getPointer(), cache.length());
 			}
 			else {
 				this.nextPage();
@@ -221,6 +264,7 @@
 		this.prev = function () {
 			if (cache.ids.prev()) {
 				this.updateMainImage(cache.getCurrent());
+				this.status.updateImageNum(cache.ids.getPointer(), cache.length());
 			}
 			else {
 				this.prevPage();
