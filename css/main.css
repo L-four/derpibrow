@@ -120,12 +120,30 @@ body {
 #status {
     z-index: 10;
     position: absolute;
-    bottom: 0;
+    bottom: 1px;
     left: 0;
     color: #FFF;
     width: 100%;
 }
+#comments {
+    z-index: 11;
+    position: absolute;
+    color:#FFF;
+    background: rgba(0,0,0,0.40);
+    font-size: 0.75em;
+    width: 30%;
+}
 
+#comments .author {
+    font-weight: bold;
+    padding-right: 1em; 
+}
+
+#comments .body {
+    padding-left: 2em;
+    display: block;
+    word-wrap: break-word;
+}
 
 
 /* ==========================================================================

@@ -14,6 +14,7 @@
   		url: 'http://www.derpiboo.ru',	// website to get pics
   		height: $(window).height(),	
   		width: $(window).width(),
+  		commentsID: '#comments',
   		statusID: '#status',
   		mainID: '#main', // main div to opreate in
   		preloadID: '#others', // pre load images into this div
@@ -167,6 +168,8 @@
   		this.curImage = 0;
   		this.maxImages = 0;
   		this.imageID = 0;
+  		this.comment_count = 0;
+  		this.enabled = false;
   		this.el = $(statusID);
   		this.updatePageNum = function(cur, max) {
   			this.curPage = cur;
@@ -182,15 +185,33 @@
   			this.imageID = id;
   			this.draw();
   		}
+  		this.updateCommentNum = function (count) {
+  			this.comment_count = count;
+  			this.draw();
+  		}
   		this.draw = function () {
-  			this.el.text(
+  			if (!this.enabled) return; 
+  			this.el.html(
   			'Page ' + this.curPage + '/' + this.maxPages
-  			+ '     '
+  			+ '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
   			+ 'Image ' + this.curImage + '/' + this.maxImages
-  			+ '     '
+  			+ '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
+  			+ 'comments:' + this.comment_count
+  			+ '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
   			+ 'id_number:' + this.imageID 
   			);
   		}
+  		this.toggle = function () {
+			if (this.enabled) {
+				this.el.addClass('visuallyhidden');
+				this.enabled = false;
+			}
+			else {
+				this.enabled = true;
+				this.draw();
+				this.el.removeClass('visuallyhidden');
+			}
+		}
   	}
 
   	
@@ -229,6 +250,46 @@
 		}
 	}
 
+	var Comments = function (parent, commentsID) {
+		this.parent = parent;
+		this.commentsID = commentsID;
+		this.el = $(commentsID);
+		this.enabled = false;
+		this.currentComments = null;
+		this.toggle = function () {
+			if (this.enabled) {
+				this.el.addClass('visuallyhidden');
+				this.enabled = false;
+			}
+			else {
+				if (this.parent.current != null) {
+					this.updateComments(this.parent.current);
+				}
+				this.el.removeClass('visuallyhidden');
+				this.enabled = true;
+			}
+		}
+		this.updateComments = function(img) {
+			var commentHTML = '';
+			var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+			if (img.comment_count > 0) {
+				for (var i = img.comments.length - 1; i >= 0; i--) {
+					var comment = img.comments[i];
+					var date = new Date(comment.posted_at);
+					commentHTML += '<div class="comment"><span class="author">' + comment.author
+					+ '</span><span class="date">' + date.getHours() + ':' + date.getMinutes() + ' ' + days[date.getDay()]
+					+ '</span><br /><span class="body">' + comment.body 
+					+ '</span></div>';
+				};
+			}
+			else {
+				commentHTML = "<h3>No Comments Brony. :(</h3>";
+			}
+
+			this.el.html(commentHTML);
+		}
+	}
+
 	var Mane = function (settings) {
 		this.page = 0;
 		this.mainID = settings.mainID;
@@ -238,14 +299,19 @@
 		this.preloader = new PreLoader(this, settings.preloadID, settings.preload);
 		this.status = new Status(this, settings.statusID);
 		this.request = null;
+		this.comments = new Comments(this, settings.commentsID);
 		this.updateMainImage = function (img) {
 			if (typeof img == 'undefined') {
 				console.log(cache);
 				return;
 			}
 			this.status.updateImageID(img.id_number);
+			this.status.updateCommentNum(img.comment_count);
+			if (this.comments.enabled) {
+				this.comments.updateComments(img);
+			}
 			console.log(img);
-			this.current = img.id_number;
+			this.current = img;
 			var main = $(this.mainID);
 			if ((img.width / img.height) > (this.width / this.height)) {
 				var img_width = Math.min(img.width, this.width);
@@ -260,6 +326,12 @@
 			//console.log(img_width + ':' + img_height + '-' + (img_width / img_height));
 			main.html("<span class=\"wapper\"><img width=\"" + img_width + "\" height=\"" + img_height + "\" src=\"" + img.image + "\" /></span>");
 
+		}
+		this.toggleComments = function() {
+			this.comments.toggle();
+		}
+		this.toggleStatus = function() {
+			this.status.toggle();
 		}
 		this.next = function () {
 			if (cache.ids.next()) {
@@ -314,11 +386,17 @@
 		$(document).keypress(function (event) {
 			console.log(event.keyCode);
 			switch (event.keyCode) {
-				case 106:
+				case 99: // c
+					mane.toggleComments();
+					break;
+				case 106: // j
 					mane.prev();
 					break;
-				case 107:
+				case 107: // k
 					mane.next();
+					break;
+				case 115: // s
+					mane.toggleStatus();
 					break;
 			}
 
