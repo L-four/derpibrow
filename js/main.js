@@ -28,24 +28,10 @@
   	var OrderedSet = function () {
   		this.list = [];
   		this.pointer = 0;
+  		this.needsSorting = true;
   		this.add = function (id) {
-  			if (typeof this.list[0] == 'undefined') {
-  				this.list.push(id);
-  			}
-  			else if (id < this.list[0]) {
-  				this.list.unshift(id);
-  			}
-  			else if (id > this.list[this.list.length-1]) {
-  				this.list.push(id);
-  			}
-  			else {
-	  			for (var i = this.list.length - 1; i >= 0; i--) {
-	  				if (id < this.list[i]) {
-	  					this.list.splice(i, 0, id);
-	  					break;
-	  				}
-	  			};
-  			}
+  			this.list.push(id);
+  			this.needsSorting = true;
   		}
   		this.setPointer = function (id) {
   			for (var i = this.list.length - 1; i >= 0; i--) {
@@ -56,20 +42,37 @@
   			};
   			return false;
   		}
+  		this.sort = function () {
+  			if (this.needsSorting) {
+  				this.list = this.list.sort(function(a,b) {
+  					if (a < b) {
+  						return 1;
+  					}
+  					else if (a > b) { 
+  						return -1;
+  					}
+  					return 0;
+  				});
+  				this.needsSorting = false;
+  			}
+  		}
   		this.getPointer = function () {
+  			this.sort();
   			return this.pointer;
   		}
   		this.current = function () {
+  			this.sort();
   			return this.list[this.pointer];
   		}
   		this.get = function (index) {
-  			if (index < 0 || index > this.list.length) {
+  			if (index < 0 || index > this.list.length - 1) {
   				return false;
   			}
+  			this.sort();
   			return this.list[index];
   		}
   		this.next = function () {
-  			if (this.pointer < this.list.length) {
+  			if (this.pointer < this.list.length - 1) {
   				this.pointer++;
   				return true;
   			}
@@ -113,39 +116,45 @@
   	};
 
   	var PageRequest = function(parent, page) {
-  		this.parent = parent;
-		if (typeof page == 'undefined') {
+  		if (typeof page == 'undefined') {
   			page = 0;
   		} 
 
+  		this.parent = parent;
   		this.page = page;
+  		this.status = 'pennding';
   		this.getPosts = function(url) {
-	  		url = 'CrossDomain.php?url=' + encodeURIComponent(url);
-	  
+	  		var url = 'CrossDomain.php?url=' + encodeURIComponent(url);
 	    	$.ajax({
-		  	dataType: "json",
-	  		url: url,
-		  		success: this.readPosts
+		  		dataType: "json",
+	  			url: url,
+		  		success: this.readPosts,
+		  		complete: this.complete
 			});
 		}
+		this.complete = function (jqXHR, textStatus) {
+			this.status = textStatus;
+		}
+		this.complete = this.complete.bind(this);
 		this.readPosts = function (data) {
-			console.log(data);
 			for (var i = data.length - 1; i >= 0; i--) {
 				cache.set(data[i].id_number, data[i]);
 			};
-			console.log(this);
 			if (this.parent.current == null) {
 				this.parent.updateMainImage(data.shift());
+				this.parent.status.updateImageNum(1, data.length);
 				this.parent.preloader.load();
 			}
 			else {
-				this.parent.next();
+				//this.parent.next();
+				console.log('new posts');
 			}
 			this.parent.status.updatePageNum(this.page, 'idk');
 			console.log(cache);
 		}
 		this.readPosts = this.readPosts.bind(this);
 		this.send = function () {
+			console.log('sending');
 			this.getPosts(endPoint(settings, 'images', this.page));
 		}
   	}
@@ -228,6 +237,7 @@
 		this.current = null;
 		this.preloader = new PreLoader(this, settings.preloadID, settings.preload);
 		this.status = new Status(this, settings.statusID);
+		this.request = null;
 		this.updateMainImage = function (img) {
 			if (typeof img == 'undefined') {
 				console.log(cache);
@@ -255,7 +265,7 @@
 			if (cache.ids.next()) {
 				this.updateMainImage(cache.getCurrent());
 				this.preloader.load();
-				this.status.updateImageNum(cache.ids.getPointer(), cache.length());
+				this.status.updateImageNum(cache.ids.getPointer() + 1, cache.length());
 			}
 			else {
 				this.nextPage();
@@ -264,19 +274,29 @@
 		this.prev = function () {
 			if (cache.ids.prev()) {
 				this.updateMainImage(cache.getCurrent());
-				this.status.updateImageNum(cache.ids.getPointer(), cache.length());
+				this.status.updateImageNum(cache.ids.getPointer()  + 1, cache.length());
 			}
 			else {
 				this.prevPage();
 			}
 		}
 		this.getPage = function () {
-			new PageRequest(this, this.page).send();	
+			if (this.request != null && this.request.status == 'pennding') {
+				return false;		
+			}
+			this.request = new PageRequest(this, this.page);
+			this.request.send();
+			return true;
 		}
 		this.nextPage = function () {
 			this.page++;
-			this.getPage();
-			return true;
+			if (this.getPage()) {
+				return true;	
+			}
+			else {
+				this.page--;
+				return false
+			}
 		}
 		this.prevPage = function () {
 			if (this.page > 0) {
