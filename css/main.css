@@ -95,6 +95,8 @@ textarea {
 
 body {
     background-color: black;
+    text-shadow: 1px 1px 0px #000000;
+    color: white;
 }
 
 #main {
@@ -122,13 +124,11 @@ body {
     position: absolute;
     bottom: 1px;
     left: 0;
-    color: #FFF;
     width: 100%;
 }
 #comments {
     z-index: 11;
     position: absolute;
-    color:#FFF;
     background: rgba(0,0,0,0.40);
     font-size: 0.75em;
     width: 30%;
@@ -143,6 +143,10 @@ body {
     padding-left: 2em;
     display: block;
     word-wrap: break-word;
+}
+#comments .body img {
+    clear: right;
+    width: 100%;
 }
 
 

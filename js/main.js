@@ -269,6 +269,28 @@
 				this.enabled = true;
 			}
 		}
+		this.commentPreProccess = function(commentbody) {
+			
+			var re = /([\!\"]{1}.+[\!\"]{1})\:(\S+)/g; // linker
+			while (true) {
+				var ar = re.exec(commentbody);
+				console.log(ar);
+				if (ar == null || ar[2].length < 5) break;
+				var image = '<a href="' + ar[2] + '">' + ar[1] + '</a>';
+				commentbody = commentbody.substring(0,ar.index) + image + commentbody.substring(ar.index + ar[1].length + ar[2].length + 1, commentbody.length);
+			}
+
+			var re = /\!([^\!\s]+)\!/g; //imager
+			while (true) {
+				var ar = re.exec(commentbody);
+				console.log(ar);
+				if (ar == null || ar[1].length < 5) break;
+				var image = '<img src="' + ar[1] + '" />';
+				commentbody = commentbody.substring(0,ar.index) + image + commentbody.substring(ar.index + ar[1].length + 2, commentbody.length);
+			}
+
+			return commentbody;
+		}
 		this.updateComments = function(img) {
 			var commentHTML = '';
 			var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -278,12 +300,12 @@
 					var date = new Date(comment.posted_at);
 					commentHTML += '<div class="comment"><span class="author">' + comment.author
 					+ '</span><span class="date">' + date.getHours() + ':' + date.getMinutes() + ' ' + days[date.getDay()]
-					+ '</span><br /><span class="body">' + comment.body 
+					+ '</span><br /><span class="body">' + this.commentPreProccess(comment.body)
 					+ '</span></div>';
 				};
 			}
 			else {
-				commentHTML = "<h3>No Comments Brony. :(</h3>";
+				commentHTML = "<h3>Nopony has made comments. :(</h3>";
 			}
 
 			this.el.html(commentHTML);
