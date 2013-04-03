@@ -97,6 +97,7 @@ body {
     background-color: black;
     text-shadow: 1px 1px 0px #000000;
     color: white;
+    transition: background 0.25s;
 }
 
 #main {
@@ -114,21 +115,20 @@ body {
     vertical-align: middle;
 }
 
-#main .wapper img {
-    margin: 0 auto;
-    display: block;
-}
 
 #status {
     z-index: 10;
-    position: absolute;
+    position: fixed;
     bottom: 1px;
-    left: 0;
+    left: 1px;
     width: 100%;
+    background: rgba(0,0,0,0.40);
 }
 #comments {
-    z-index: 11;
+    z-index: 9;
     position: absolute;
+    left: 1px;
+    top: 1px;
     background: rgba(0,0,0,0.40);
     font-size: 0.75em;
     width: 30%;
@@ -147,6 +147,12 @@ body {
 #comments .body img {
     clear: right;
     width: 100%;
+}
+#tags {
+    position: fixed;
+    right: 1px;
+    top: 1px;
+    padding: 5px;
 }
 
 

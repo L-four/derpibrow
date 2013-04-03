@@ -14,7 +14,6 @@
 
         <link rel="stylesheet" href="css/normalize.css">
         <link rel="stylesheet" href="css/main.css">
-        <script src="js/vendor/modernizr-2.6.2.min.js"></script>
     </head>
     <body>
         <!--[if lt IE 7]>
@@ -23,11 +22,14 @@
 
         <!-- Add your site or application content here -->
         <div id="main"></div>
+        <div id="tags" class="visuallyhidden"><input type="textfield" length="20" tabindex="2" /><span tabindex="3"><div class="current_tags"></div></div>
         <div id="others" class="visuallyhidden"></div>
         <div id="status" class="visuallyhidden"></div>
         <div id="comments" class="visuallyhidden"></div>
         <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
         <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.9.0.min.js"><\/script>')</script>
+        <script src="js/vendor/quantize.js"></script>
+        <script src="js/vendor/mustache.js"></script>
         <script src="js/plugins.js"></script>
         <script src="js/main.js"></script>
 
