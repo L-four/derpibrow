@@ -97,7 +97,7 @@ body {
     background-color: black;
     text-shadow: 1px 1px 0px #000000;
     color: white;
-    transition: background 0.25s;
+    transition: background 5s;
 }
 
 #main {
@@ -122,14 +122,12 @@ body {
     bottom: 1px;
     left: 1px;
     width: 100%;
-    background: rgba(0,0,0,0.40);
 }
 #comments {
     z-index: 9;
     position: absolute;
     left: 1px;
     top: 1px;
-    background: rgba(0,0,0,0.40);
     font-size: 0.75em;
     width: 30%;
 }
@@ -153,6 +151,26 @@ body {
     right: 1px;
     top: 1px;
     padding: 5px;
+    z-index: 12;
+}
+#imageinfo {
+    z-index: 11;
+    margin: 0 auto;
+    position: fixed;
+    right:1px;
+    top: 1px;
+    padding: 5px;
+    width: 30%;
+}
+.tags #imageinfo {
+    top:20px;
+}
+.label  {
+    font-weight:bold;
+    margin-right: 0.5em;
+}
+#status, #comments, #imageinfo {
+    background: rgba(0,0,0,0.40);
 }
 
 

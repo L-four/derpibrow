@@ -10,8 +10,33 @@
 		                                        $(window).scrollLeft()) + "px");
 		return this;
 	}
+    var interfaces = {
+      derpiboo: {
+        url: 'http://derpibooru.org',
+        urlencodings: 1,
+        posturl: '/',
+        image_prefix: 'http:',
+        endpoints: {
+          index: {
+            page: '/images.json',
+            pageArg: 'page',
+          },
+          search: {
+            page: '/search.json',
+            pageArg: 'page',
+            queryArg: 'q'
+          }
+        },
+        postAttributes: {
+          image: {
+            url: 'image',
+            id: 'id_number'
+          }
+        }
+      },
+    };
   	var settings = {
-  		url: 'http://www.derpiboo.ru',	// website to get pics
+      interface: interfaces.derpiboo,
   		height: $(window).height(),	
   		width: $(window).width(),
   		tagsID: '#tags',
@@ -19,22 +44,53 @@
   		statusID: '#status',
   		mainID: '#main', // main div to opreate in
   		preloadID: '#others', // pre load images into this div
-  		preload: 3, // number of images to preload
+  		ImgInfoID: '#imageinfo',
+  		preload: 20, // number of images to preload
+  		preloadMeta: 3, // number of pages of meta date to load
+  		backgroundColor: '#000',
+  		imagesPerPage: 15,
   		strings: {
   			no_comments: 'Nopony has made comments. :(',
   			days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
   			page: 'Page',
-  			link: 'links', 
+  			link: 'Link:', 
   			number_of_comments: '# of Comments',
   			image_id: 'Image Id',
   			image: 'Image',
   			tags: 'Tags',
+  			uploader: 'Uploaded by:',
+  			description: 'Description:',
+  			created_at: 'Created:',
+  			updated_at: 'Updated:',
+  			upvotes: 'Upvotes:',
+  			downvotes: 'Downvotes:',
+  			source_url: 'Source:',
+  			score: 'Score:',
+  			comment_count: 'Comments:',
+  			license: 'License:'
   		}
   	};
-  	console.log(settings);
   	function updateDimentions(obj) {
   		obj.height = $(window).height();
   		obj.width = $(window).width();
+  	}
+
+  	function eventChainer (el, event, listener) {
+  		var _arguments = arguments;
+  		var _self = this;
+  		console.log(el[event]);
+  		if (el[event] != null) {
+  			var old = el[event];
+  			el[event] = function () {
+  				listener.apply(_self, _arguments);
+  				old.apply(_self, _arguments);;
+  			}
+  		}
+  		else {
+  			el[event] = function () {
+  				listener.apply(_self, _arguments);
+  			}
+  		}
   	}
 
   	var OrderedSet = function () {
@@ -55,6 +111,7 @@
   			return false;
   		}
   		this.sort = function () {
+  			return;
   			if (this.needsSorting) {
   				this.list = this.list.sort(function(a,b) {
   					if (a < b) {
@@ -145,42 +202,49 @@
   		this.endPoint = endPoint;
   		this.status = 'pennding';
   		this.getPosts = function(url) {
+
 	  		var url = 'CrossDomain.php?url=' + encodeURIComponent(url);
+
 	    	$.ajax({
 		  		dataType: "json",
 	  			url: url,
 		  		success: this.readPosts,
 		  		complete: this.complete
 			});
-		}
-		this.complete = function (jqXHR, textStatus) {
-			this.status = textStatus;
-		}
-		this.complete = this.complete.bind(this);
-		this.readPosts = function (data) {
-			if (data.length == 0) {
-				console.log('No Posts');
-			}
-			for (var i = data.length - 1; i >= 0; i--) {
-				cache.set(data[i].id_number, data[i]);
-			};
-			if (this.parent.current == null) {
-				this.parent.updateMainImage(data.shift());
-				this.parent.status.updateImageNum(1, data.length);
-				this.parent.preloader.load();
-			}
-			else {
-				//this.parent.next();
-				console.log('new posts');
-			}
-			this.parent.status.updatePageNum(this.page, 'idk');
-			console.log(cache);
-		}
-		this.readPosts = this.readPosts.bind(this);
-		this.send = function (method) {
-			console.log('sending');
-			this.getPosts(this.endPoint.getURL(method, this.page));
-		}
+  		}
+  		this.complete = function (jqXHR, textStatus) {
+  			this.status = textStatus;
+  		}
+  		this.complete = this.complete.bind(this);
+  		this.readPosts = function (data) {
+  			if (typeof data.images != 'undefined') {
+  				data = data.images; // updated api
+  			}
+  			
+  			if (data.length == 0) {
+  				console.log('No Posts');
+  			}
+  			else {
+  				console.log('new posts');
+  			}
+  			for (var i = 0; i < data.length; i++) {
+
+  				cache.set(data[i][settings.interface.postAttributes.image.id], data[i]);
+  			};
+  			if (this.parent.current == null) {
+  				this.parent.updateMainImage(data.shift());
+  				this.parent.status.updateImageNum(1, data.length);
+  				this.parent.preloader.load();
+  			}
+  			
+  			this.parent.status.updatePageNum(this.page, 'idk');
+  			//console.log(cache);
+  		}
+  		this.readPosts = this.readPosts.bind(this);
+  		this.send = function (method) {
+  			console.log('Requesting new posts');
+  			this.getPosts(this.endPoint.getURL(method, this.page));
+  		}
   	}
 
   	var Status = function (parent, statusID) {
@@ -229,7 +293,7 @@
   			+ '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
   			+ str.image_id + ' ' + this.imageID  
   			+ '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
-  			+ str.link + ' <a href="' + settings.url + '/' + this.imageID + '" >' + settings.url + '/' + this.imageID + '</a>'
+  			+ str.link + ' <a href="' + settings.interface.url + settings.interface.posturl + this.imageID + '" >' + settings.interface.url + settings.interface.posturl + this.imageID + '</a>'
   			+ '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
   			+ str.tags + ' <span class="tags">' + this.tags + '</span>'
   			);
@@ -250,57 +314,111 @@
   	var ImgInfo = function (parent, imginfoID) {
   		this.parent = parent;
   		this.imginfoID = imginfoID;
+  		this.el = $(this.imginfoID);
+  		this.enabled = false;
+		this.toggle = function () {
+			if (this.enabled) {
+				this.el.addClass('visuallyhidden');
+				this.enabled = false;
+			}
+			else {
+				if (this.parent.current != null) {
+					this.update(this.parent.current);
+				}
+				this.el.removeClass('visuallyhidden');
+				this.enabled = true;
+			}
+		}
+  		this.update = function (img) {
+  			console.log(img);
+  			this.el.html(
+  				'<span class="label">' + settings.strings.uploader + '</span>' + img.uploader + '<br />'
+  				+ '<span class="label">' + settings.strings.description + '</span>' + img.description + '<br />' 
+  				+ '<span class="label">' + settings.strings.created_at + '</span>' + new DateFormater(img.created_at).format('g:i l Y') + '<br />' 
+  				+ '<span class="label">' + settings.strings.updated_at + '</span>' + new DateFormater(img.updated_at).format('g:i l Y') + '<br />' 
+  				+ '<span class="label">' + settings.strings.license + '</span>' + img.license + '<br />' 
+  				+ '<span class="label">' + settings.strings.score + '</span>' + img.score + '<br />' 
+  				+ '<span class="label">' + settings.strings.upvotes + '</span>' + img.upvotes + '<br />' 
+  				+ '<span class="label">' + settings.strings.downvotes + '</span>' + img.downvotes + '<br />' 
+  				+ '<span class="label">' + settings.strings.tags + '</span>' + img.tags + '<br />' 
+  				+ '<span class="label">' + settings.strings.comment_count + '</span>' + img.comment_count + '<br />' 
+  				+ '<span class="label">' + settings.strings.link + '</span>' + '<a href="' + settings.interface.url + settings.interface.posturl + img[settings.interface.postAttributes.image.id] + '" >' + settings.interface.url + settings.interface.posturl + img[settings.interface.postAttributes.image.id] + '</a>' + '<br />' 
+  				+ '<span class="label">' + settings.strings.source_url + '</span>' + '<a href="' + img.source_url + '" >' + img.source_url + '</a>' + '<br />'
+  			);
+  		}
   	}
 
-  	var Endpoint = function (parent, url) {
+  	var Endpoint = function (parent, interface) {
   		this.parent = parent;
-  		this.url = url;
+  		this.interface = interface;
   		this.getTags = function () {
   			return this.parent.tags.val();
   		}
   		this.getURL = function (method, page) {
-  			var url = '';
+        var eps = this.interface.endpoints;
+  			var url = this.interface.url + eps[method].page;
+
 	  		switch (method) {
-	  			case 'search':
-	  				comp = [this.url, method].join('/');
-	  				url = comp + '.json?q=' + this.getTags() + '&page=' + page;
+	  			case 'search':		
+	  				url += '?' + eps[method].queryArg + '='
+              + this.getTags().replace(' ', encodeURIComponent('+'))
+              + '&' + eps[method].pageArg + '=' + page;
 	  				break;
-	  			case 'images':
-			  		comp = [this.url, method, 'page', page.toString()];
-			  		url = comp.join('/') + '.json';
+	  			case 'index':
+			  		url += '?' + eps[method].pageArg + '=' + page;
 			  		break;
 	  		}
 	  		return  url;
   		}
   	}
   	
-	var PreLoader = function (parent, id, num) {
+	var PreLoader = function (parent, id, imageNum, pageNum) {
 		this.parent = parent;
 		this.containter = $(id);
-		this.num = num;
+		this.imageNum = imageNum;
+		this.pageNum = pageNum;
 		this.imgs = [];
 		this.tracker = null;
+		this.loadedlist = [];
 		this.load = function () {
 			this.imgs = [];
 			var i = 1;
 			var load_next = false;
-			while (i <= this.num) {
+			while (i <= this.imageNum) {
 				var id = cache.ids.get(cache.ids.getPointer() + i);
-				console.log(id + ':' +cache.ids.getPointer() + '-' + i);
+				//console.log(id + ':' +cache.ids.getPointer() + '-' + i);
 				if (id !== false) {
-					this.imgs.push(cache.get(id).image);
+					var image = cache.get(id)[settings.interface.postAttributes.image.url];
+					if (!this.hasLoaded(image)) {
+						this.imgs.push(image);
+						this.addToLoaded(image);
+					}
 				}
 				else {
 					load_next = true;
 				}
 				i++;
 			}
-			if (load_next) {
+			if (load_next || !cache.ids.get(cache.ids.getPointer() + (this.pageNum * settings.imagesPerPage))) {
 				this.parent.nextPage();
 			}
-			console.log(this.imgs);
+			//console.log(this.imgs);
 			this.tracker = new Tracker(this.imgs, GetImage, this.updateDisplay);
 			this.tracker.start();
+		}
+		this.addToLoaded = function (image) {
+			if (this.loadedlist.length > this.imageNum * 2) {
+				this.loadedlist.shift();
+			}
+			this.loadedlist.push(image);
+		}
+		this.hasLoaded = function (image) {
+			for (var i = this.loadedlist.length - 1; i >= 0; i--) {
+				if (this.loadedlist[i] === image) {
+					return true;
+				}
+			}
+			return false;
 		}
 		this.updateDisplay = function (items) {
 			var imgs = [];
@@ -317,14 +435,14 @@
 		this.command = command;
 		this.finish = finish;
 		this.start = function() {
-			console.log(list);
-			for (var i = this.list.length - 1; i >= 0; i--) {
+			//console.log(list);
+			for (var i = 0; i < this.list.length; i++) {
 				var item = this.list[i];
 				this.listStatus[item] = {item:item, status:'start', data: null};
 				var command_instance = new this.command(item);
 				command_instance.setTracker(this);
 				command_instance.run();
-				console.log(i);
+				//console.log(i);
 			};
 		}
 		this.update = function (item, data, status) {
@@ -366,13 +484,12 @@
 			});
 		}
 		this.urlPreproccess = function (url) {
-			if (url[0] + url[1] === '//') {
-				url = "http:" + url;
-			}
-			return 'CrossDomain.php?img=' + encodeURIComponent(url);
+      url = settings.interface.image_prefix + url;
+			return 'CrossDomain.php?img=' + encodeURIComponent(url) + '&encodings=' + settings.interface.urlencodings;
 		}
 		this.proccessedURL = this.urlPreproccess(url);
 		this.success = function(data) {
+      console.log(data);
 			if (this.tracker !== null) {
 				this.tracker.update(this.url, data.img, true);
 			}
@@ -417,7 +534,7 @@
 			var re = /([\!\"]{1}.+[\!\"]{1})\:(\S+)/g; // linker
 			while (true) {
 				var ar = re.exec(commentbody);
-				console.log(ar);
+				//console.log(ar);
 				if (ar == null || ar[2].length < 5) break;
 				var image = '<a href="' + ar[2] + '">' + ar[1] + '</a>';
 				commentbody = commentbody.substring(0,ar.index) + image + commentbody.substring(ar.index + ar[1].length + ar[2].length + 1, commentbody.length);
@@ -426,7 +543,7 @@
 			var re = /\!([^\!\s]+)\!/g; //imager
 			while (true) {
 				var ar = re.exec(commentbody);
-				console.log(ar);
+				//console.log(ar);
 				if (ar == null || ar[1].length < 5) break;
 				var image = '<img src="' + ar[1] + '" />';
 				commentbody = commentbody.substring(0,ar.index) + image + commentbody.substring(ar.index + ar[1].length + 2, commentbody.length);
@@ -464,12 +581,14 @@
 		this.value = '';
 		this.toggle = function () {
 			if (this.enabled) {
+				$('html').removeClass('tags'); 
 				this.el.addClass('visuallyhidden');
 				this.enabled = false;
 				var _self = this;
 				setTimeout(function(){_self.input.blur();}, 300);
 			}
 			else {
+				$('html').addClass('tags');
 				this.el.removeClass('visuallyhidden');
 				this.enabled = true;
 				var _self = this;
@@ -488,34 +607,84 @@
 
 	}
 
+	var DateFormater = function (datestr) {
+		this.date = new Date(datestr);
+		this.days = settings.strings.days;
+		this.format = function (format) {
+			var formatedDate = '';
+			for (var i = 0; i < format.length; i++) {
+				switch (format[i]) {
+					case 'l':
+						formatedDate += this.days[this.date.getDay()];
+						break;
+					case 'g':
+						var hours = String(this.date.getHours());
+						if (hours.length == 1) {
+							hours = '0' + hours;
+						}
+						formatedDate += hours;
+						break;
+					case 'G':
+						formatedDate += this.date.getHours();
+						break;
+					case 'i':
+						var minuntes = String(this.date.getMinutes());
+						console.log(minuntes);
+						if (minuntes.length == 1) {
+							minuntes = '0' + minuntes;
+						}
+						formatedDate += minuntes;
+						break;
+					case 'Y':
+						formatedDate += this.date.getFullYear();
+						break;
+					case 'y':
+						var year = String(this.date.getFullYear());
+						year = year.substr(2,2);
+						formatedDate += year;
+						break;
+					default:
+						formatedDate += format[i];
+						break;
+				}
+			}
+			return formatedDate;
+		}
+	}
+
 	var Mane = function (settings) {
 		this.page = 0;
+    this.cache = cache;
 		this.enabledColorChange = false;
 		this.mainID = settings.mainID;
 		this.el = $(this.mainID);
 		this.height = settings.height;
 		this.width = settings.width;
 		this.current = null;
-		this.preloader = new PreLoader(this, settings.preloadID, settings.preload);
+		this.preloader = new PreLoader(this, settings.preloadID, settings.preload, settings.preloadMeta);
 		this.status = new Status(this, settings.statusID);
 		this.request = null;
 		this.comments = new Comments(this, settings.commentsID);
 		this.tags = new Tags(this, settings.tagsID);
-		this.endPoint = new Endpoint(this, settings.url);
+		this.endPoint = new Endpoint(this, settings.interface);
+		this.imgInfo = new ImgInfo(this, settings.ImgInfoID);
 		this.updateMainImage = function (img) {
 			if (typeof img == 'undefined') {
-				console.log(cache);
+				console.log('None valid image passed to mane.updateMainImage');
 				return;
 			}
 
-			this.status.updateImageID(img.id_number);
+			this.status.updateImageID(img[settings.interface.postAttributes.image.id]);
 			this.status.updateCommentNum(img.comment_count);
 			if (this.comments.enabled) {
 				this.comments.updateComments(img);
 			}
+			if (this.imgInfo.enabled) {
+				this.imgInfo.update(img);
+			}
 
 			this.current = img;
-			var imageGetter = new GetImage(img.image);
+			var imageGetter = new GetImage(img[settings.interface.postAttributes.image.url]);
 			imageGetter.setCallback(this.drawMainImage);
 			imageGetter.run();
 		}
@@ -557,7 +726,7 @@
 				}
 			});
 			$(document).keydown(function (event) {
-				console.log('keydown:' + event.keyCode);
+				//console.log('keydown:' + event.keyCode);
 
 				var increment = 25;
 				switch (event.keyCode) {
@@ -601,7 +770,7 @@
 				var new_width = width - (width / 10);
 			}
 			else {
-				console.log('zoom has no dir');
+				//console.log('zoom has no dir');
 				return false;
 			}
 
@@ -617,7 +786,13 @@
 		this.toggleTags = function() {
 			this.tags.toggle();
 		}
+		this.toggleInfo = function () {
+			this.imgInfo.toggle();
+		}
 		this.toggleBackgroundColor = function() {
+			if (this.enabledColorChange) {
+				$('body').css('background-color', settings.backgroundColor);
+			}
 			this.enabledColorChange = !this.enabledColorChange;
 		}
 		this.next = function () {
@@ -643,9 +818,9 @@
 			if (this.request != null && this.request.status == 'pennding') {
 				return false;		
 			}
-			var method = 'images';
+			var method = 'index';
 			if (this.tags.val() != '') {
-				method = 'search'
+				method = 'search';
 			}
 			this.request = new PageRequest(this, this.page, this.endPoint);
 			this.request.send(method);
@@ -679,23 +854,39 @@
 
 	function main() {
 		var mane = new Mane(settings);
-		mane.next(); // init load
+    window.derpibrow = mane;
+		mane.next(); // init load		
+		
+	  	eventChainer(window, 'onresize', function() {
+	  		updateDimentions(mane);
+	  	});
+
 		$(document).keypress(function (event) {
 			console.log('keypress:' + event.keyCode);
 			if (event.target.tagName.toLowerCase() == 'input') {
 				if (event.keyCode == 13) {
-					mane.reset();
+					var oldtags = mane.tags.val();
 					mane.tags.get();
-					mane.next();
+					if (oldtags != mane.tags.val()) {
+						mane.reset();
+						mane.next();
+					}
 				}
 				return;
 			}
 			else {
-
 				// needs to discard on inputs
 				switch (event.keyCode) {
+					case 98: // b
+						mane.toggleBackgroundColor();
+						event.stopPropagation();
+						break;
 					case 99: // c
 						mane.toggleComments();
+						event.stopPropagation();
+						break;
+					case 105: // i
+						mane.toggleInfo();
 						event.stopPropagation();
 						break;
 					case 106: // j
@@ -712,10 +903,6 @@
 						break;
 					case 116: // t
 						mane.toggleTags();
-						event.stopPropagation();
-						break;
-					case 98: //b
-						mane.toggleBackgroundColor();
 						event.stopPropagation();
 						break;
 				}
