@@ -596,15 +596,25 @@
 			}
 		}
 		this.get = function () {
-			this.input.blur();
+      this.blur();
 			this.value = this.input.val();
 			this.display.html(this.val());
 			this.parent.status.updateTags(this.val());
 		}
+    this.blur = function () {
+      this.input.blur();
+    }
 		this.val = function () {
 			return this.value;
 		}
-
+    this.submit = function () {
+      var oldtags = this.val();
+      this.get();
+      if (oldtags != this.val()) {
+        parent.reset();
+        parent.next();
+      }
+    }
 	}
 
 	var DateFormater = function (datestr) {
@@ -658,6 +668,7 @@
 		this.enabledColorChange = false;
 		this.mainID = settings.mainID;
 		this.el = $(this.mainID);
+    this.imgEl = null;
 		this.height = settings.height;
 		this.width = settings.width;
 		this.current = null;
@@ -708,74 +719,55 @@
 			//console.log(img_width + ':' + img_height + '-' + (img_width / img_height));
 			this.el.html("<span class=\"wapper\"><img width=\"" + img_width + "\" height=\"" + img_height + "\" src=\"" + url + "\" /></span>");
 			// zome magic
-			var imgEl = $('img', this.el);
+			this.imgEl = $('img', this.el);
 			if (this.enabledColorChange) {
-				imgEl.load(function() {
-					var bg_color = ColorThief.getDominantColor(imgEl);
+				this.imgEl.load(function() {
+					var bg_color = ColorThief.getDominantColor(this.imgEl);
 					$('body').css('background-color', 'rgb(' + bg_color.join(',') + ')' );
 				});
 			}
-			var _self = this;
-			imgEl.mousewheel(function (event, delta) {
-				var item = $(this);
-				if (delta > 0) {
-					_self.zoom(item, 'in', img);
-				}
-				else {
-					_self.zoom(item, 'out', img);
-				}
-			});
-			$(document).keydown(function (event) {
-				//console.log('keydown:' + event.keyCode);
-
-				var increment = 25;
-				switch (event.keyCode) {
-					case 40: // up
-						imgEl.css('margin-top',parseInt(imgEl.css('margin-top').replace(/[^-\d\.]/g, '')) - increment + 'px');
-						event.stopPropagation();
-						break;
-
-					case 37: // right
-						imgEl.css('margin-left',parseInt(imgEl.css('margin-left').replace(/[^-\d\.]/g, '')) + increment + 'px');
-						event.stopPropagation();
-						break;
-					case 38: // down
-						imgEl.css('margin-top',parseInt(imgEl.css('margin-top').replace(/[^-\d\.]/g, '')) + increment + 'px');
-						event.stopPropagation();
-						break;
-					case 39: // left
-						imgEl.css('margin-left',parseInt(imgEl.css('margin-left').replace(/[^-\d\.]/g, '')) - increment + 'px');
-						event.stopPropagation();
-						break;
-					case 90: // z
-						_self.zoom(imgEl, 'in', img);
-						break;
-					case 88: // x
-						_self.zoom(imgEl, 'out', img);
-						break;
-					case 27:
-						_self.tags.input.blur();
-
-				}
-			});
 		}
 		this.drawMainImage = this.drawMainImage.bind(this);
-		this.zoom = function (item, dir, img) {
-			var width = item.width();
+    this.moveImage = function (dir, increment) {
+      this.imgEl.css('margin-' + dir, parseInt(this.imgEl.css('margin-' + dir).replace(/[^-\d\.]/g, '')) + increment + 'px');
+    }
+    this.moveImageUP = function () {
+      this.moveImage('top', -25);
+    }
+    this.moveImageDown = function () {
+      this.moveImage('top', +25);
+    }
+    this.moveImageLeft = function () {
+      this.moveImage('left', -25);
+    }
+    this.moveImageRight = function () {
+      this.moveImage('left', +25);
+    }
+    this.zoomIn = function () {
+      this.zoom('in', 10);
+    }
+    this.zoomOut = function () {
+      this.zoom('out', 10);
+    }
+		this.zoom = function (dir, percent) {
+      if (this.current === null) { return false; }
+
+			var width = this.imgEl.width();
 
 			if(dir == 'in') {
-				var new_width = width + (width / 10);
+				var new_width = width + (width / percent);
 			}
 			else if (dir == 'out') {
-				var new_width = width - (width / 10);
+				var new_width = width - (width / percent);
 			}
 			else {
-				//console.log('zoom has no dir');
+				//zoom has no dir
 				return false;
 			}
 
-			item.width(new_width);
-			item.height(new_width / (img.width / img.height));	
+			this.imgEl.width(new_width);
+			this.imgEl.height(new_width / (this.current.width / this.current.height));	
+      return true;
 		}
 		this.toggleComments = function() {
 			this.comments.toggle();
@@ -851,64 +843,84 @@
 			this.page = 0;
 		}
 	}
+  
+  var keyMapper = function () {
+    this.mappings = {};
+    this.addMapping = function (mapping) {
+      if (mapping.length > 2) {
+        mapping[1] = mapping[1][mapping[2]].bind(mapping[1]);
+      }
+      if (typeof mapping[1] !== "function") {
+        throw new TypeError(mapping[1] + " is not a function");
+      }
+      if (typeof mapping[0] === "string") {
+        mapping[0] = mapping[0].charCodeAt(0);
+      }
+      this.mappings[mapping[0]] = mapping[1];
+    }
+    this.addMappings = function(mappings) {
+      mappings.map(this.addMapping, this);
+    }
+    this.reacteToEvent = function(event) {
+      var key = event.keyCode;
+
+      if (key in this.mappings) {
+        this.mappings[key]();
+      }
+    }
+  }
+
 
 	function main() {
 		var mane = new Mane(settings);
     window.derpibrow = mane;
 		mane.next(); // init load		
 		
-	  	eventChainer(window, 'onresize', function() {
-	  		updateDimentions(mane);
-	  	});
+  	eventChainer(window, 'onresize', function() {
+  		updateDimentions(mane);
+  	});
 
-		$(document).keypress(function (event) {
-			console.log('keypress:' + event.keyCode);
-			if (event.target.tagName.toLowerCase() == 'input') {
-				if (event.keyCode == 13) {
-					var oldtags = mane.tags.val();
-					mane.tags.get();
-					if (oldtags != mane.tags.val()) {
-						mane.reset();
-						mane.next();
-					}
-				}
-				return;
+    var keyMappings = [
+      ['B', mane, 'toggleBackgroundColor'],
+      ['C', mane, 'toggleComments'],
+      ['I', mane, 'toggleInfo'],
+      ['J', mane, 'prev'],
+      ['K', mane, 'next'],
+      ['S', mane, 'toggleStatus'],
+      ['T', mane, 'toggleTags'],
+      [40, mane, 'moveImageUP'], // up
+      [37, mane, 'moveImageRight'], // right
+      [38, mane, 'moveImageDown'], // down
+      [39, mane, 'moveImageLeft'], // left
+      ['Z', mane, 'zoomIn'],
+      ['X', mane, 'zoomOut'],
+      [27, mane.tags, 'blur'],  // Esc
+      [13, mane.tags, 'submit'] // Enter
+    ];
+    keymapper = new keyMapper();
+    keymapper.addMappings(keyMappings);
+
+    var doc = $(document);
+
+		doc.keydown(function (event) {
+      if (event.target.tagName.toLowerCase() == 'input'
+          && event.keyCode >= 65
+          && event.keyCode <= 90) {
+  			return; // Don't catch text input
 			}
 			else {
-				// needs to discard on inputs
-				switch (event.keyCode) {
-					case 98: // b
-						mane.toggleBackgroundColor();
-						event.stopPropagation();
-						break;
-					case 99: // c
-						mane.toggleComments();
-						event.stopPropagation();
-						break;
-					case 105: // i
-						mane.toggleInfo();
-						event.stopPropagation();
-						break;
-					case 106: // j
-						mane.prev();
-						event.stopPropagation();
-						break;
-					case 107: // k
-						mane.next();
-						event.stopPropagation();
-						break;
-					case 115: // s
-						mane.toggleStatus();
-						event.stopPropagation();
-						break;
-					case 116: // t
-						mane.toggleTags();
-						event.stopPropagation();
-						break;
-				}
+				keymapper.reacteToEvent(event);
 			}
-
 		});
+
+    doc.mousewheel(function (event, delta) {
+        if (delta > 0) {
+          mane.zoomIn();
+        }
+        else {
+          mane.zoomOut();
+        }
+    });
 	}
 
 	main();
