@@ -1,321 +1,321 @@
 
 
 (function($) {
-  $(document).ready(function(){
+	$(document).ready(function(){
 	jQuery.fn.center = function () {
 		this.css("position","absolute");
 		this.css("top", Math.max(0, (($(window).height() - $(this).outerHeight()) / 2) + 
-		                                        $(window).scrollTop()) + "px");
+																						$(window).scrollTop()) + "px");
 		this.css("left", Math.max(0, (($(window).width() - $(this).outerWidth()) / 2) + 
-		                                        $(window).scrollLeft()) + "px");
+																						$(window).scrollLeft()) + "px");
 		return this;
 	}
-    var interfaces = {
-      derpiboo: {
-        url: 'http://derpibooru.org',
-        urlencodings: 1,
-        posturl: '/',
-        image_prefix: 'http:',
-        endpoints: {
-          index: {
-            page: '/images.json',
-            pageArg: 'page',
-          },
-          search: {
-            page: '/search.json',
-            pageArg: 'page',
-            queryArg: 'q'
-          }
-        },
-        postAttributes: {
-          image: {
-            url: 'image',
-            id: 'id_number'
-          }
-        }
-      },
-    };
-  	var settings = {
-      interface: interfaces.derpiboo,
-  		height: $(window).height(),	
-  		width: $(window).width(),
-  		tagsID: '#tags',
-  		commentsID: '#comments',
-  		statusID: '#status',
-  		mainID: '#main', // main div to opreate in
-  		preloadID: '#others', // pre load images into this div
-  		ImgInfoID: '#imageinfo',
-  		preload: 20, // number of images to preload
-  		preloadMeta: 3, // number of pages of meta date to load
-  		backgroundColor: '#000',
-  		imagesPerPage: 15,
-  		strings: {
-  			no_comments: 'Nopony has made comments. :(',
-  			days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
-  			page: 'Page',
-  			link: 'Link:', 
-  			number_of_comments: '# of Comments',
-  			image_id: 'Image Id',
-  			image: 'Image',
-  			tags: 'Tags',
-  			uploader: 'Uploaded by:',
-  			description: 'Description:',
-  			created_at: 'Created:',
-  			updated_at: 'Updated:',
-  			upvotes: 'Upvotes:',
-  			downvotes: 'Downvotes:',
-  			source_url: 'Source:',
-  			score: 'Score:',
-  			comment_count: 'Comments:',
-  			license: 'License:'
-  		}
-  	};
-  	function updateDimentions(obj) {
-  		obj.height = $(window).height();
-  		obj.width = $(window).width();
-  	}
+		var interfaces = {
+			derpiboo: {
+				url: 'http://derpibooru.org',
+				urlencodings: 1,
+				posturl: '/',
+				image_prefix: 'http:',
+				endpoints: {
+					index: {
+						page: '/images.json',
+						pageArg: 'page',
+					},
+					search: {
+						page: '/search.json',
+						pageArg: 'page',
+						queryArg: 'q'
+					}
+				},
+				postAttributes: {
+					image: {
+						url: 'image',
+						id: 'id_number'
+					}
+				}
+			},
+		};
+		var settings = {
+			interface: interfaces.derpiboo,
+			height: $(window).height(),
+			width: $(window).width(),
+			tagsID: '#tags',
+			commentsID: '#comments',
+			statusID: '#status',
+			mainID: '#main', // main div to opreate in
+			preloadID: '#others', // pre load images into this div
+			ImgInfoID: '#imageinfo',
+			preload: 20, // number of images to preload
+			preloadMeta: 3, // number of pages of meta date to load
+			backgroundColor: '#000',
+			imagesPerPage: 15,
+			strings: {
+				no_comments: 'Nopony has made comments. :(',
+				days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+				page: 'Page',
+				link: 'Link:', 
+				number_of_comments: '# of Comments',
+				image_id: 'Image Id',
+				image: 'Image',
+				tags: 'Tags',
+				uploader: 'Uploaded by:',
+				description: 'Description:',
+				created_at: 'Created:',
+				updated_at: 'Updated:',
+				upvotes: 'Upvotes:',
+				downvotes: 'Downvotes:',
+				source_url: 'Source:',
+				score: 'Score:',
+				comment_count: 'Comments:',
+				license: 'License:'
+			}
+		};
+		function updateDimentions(obj) {
+			obj.height = $(window).height();
+			obj.width = $(window).width();
+		}
 
-  	function eventChainer (el, event, listener) {
-  		var _arguments = arguments;
-  		var _self = this;
-  		console.log(el[event]);
-  		if (el[event] != null) {
-  			var old = el[event];
-  			el[event] = function () {
-  				listener.apply(_self, _arguments);
-  				old.apply(_self, _arguments);;
-  			}
-  		}
-  		else {
-  			el[event] = function () {
-  				listener.apply(_self, _arguments);
-  			}
-  		}
-  	}
-
-  	var OrderedSet = function () {
-  		this.list = [];
-  		this.pointer = 0;
-  		this.needsSorting = true;
-  		this.add = function (id) {
-  			this.list.push(id);
-  			this.needsSorting = true;
-  		}
-  		this.setPointer = function (id) {
-  			for (var i = this.list.length - 1; i >= 0; i--) {
-  				if (id == this.list[i]) {
-  					this.pointer = i;
-  					return true;
-  				}
-  			};
-  			return false;
-  		}
-  		this.sort = function () {
-  			return;
-  			if (this.needsSorting) {
-  				this.list = this.list.sort(function(a,b) {
-  					if (a < b) {
-  						return 1;
-  					}
-  					else if (a > b) { 
-  						return -1;
-  					}
-  					return 0;
-  				});
-  				this.needsSorting = false;
-  			}
-  		}
-  		this.getPointer = function () {
-  			this.sort();
-  			return this.pointer;
-  		}
-  		this.current = function () {
-  			this.sort();
-  			return this.list[this.pointer];
-  		}
-  		this.get = function (index) {
-  			if (index < 0 || index > this.list.length - 1) {
-  				return false;
-  			}
-  			this.sort();
-  			return this.list[index];
-  		}
-  		this.next = function () {
-  			if (this.pointer < this.list.length - 1) {
-  				this.pointer++;
-  				return true;
-  			}
-  			return false;
-  		}
-  		this.prev = function () {
-  			if (this.pointer > 0) {
-  				this.pointer--;
-  				return true;
-  			}
-  			return false;
-  		}
-  		this.length = function () {
-  			return this.list.length;
-  		}
-  		this.clear = function () {
-  			this.list = [];
-	  		this.pointer = 0;
-  		}
-  	};
-
-  	var cache = {
-  		data: {},
-  		ids: new OrderedSet(),
-  		get: function (id) {
-  			if (typeof this.data[id] !== 'undefined') {
-  				return this.data[id];
-  			}
-  			else {
-  				return 0;
-  			}
-  		},
-  		set: function (id, data) {
-  			if (typeof this.data[id] == 'undefined') {
-  				this.ids.add(id);
-  			}
-  			this.data[id] = data;
-  		},
-  		length: function () {
-  			return this.ids.length();
-  		},
-  		getCurrent: function () {
-  			return this.get(this.ids.current());
-  		},
-  		clear: function () {
-  			this.data = {};
-  			this.ids.clear();
-  		}
-  	};
-
-  	var PageRequest = function(parent, page, endPoint) {
-  		if (typeof page == 'undefined') {
-  			page = 0;
-  		} 
-
-  		this.parent = parent;
-  		this.page = page;
-  		this.endPoint = endPoint;
-  		this.status = 'pennding';
-  		this.getPosts = function(url) {
-
-	  		var url = 'CrossDomain.php?url=' + encodeURIComponent(url);
-
-	    	$.ajax({
-		  		dataType: "json",
-	  			url: url,
-		  		success: this.readPosts,
-		  		complete: this.complete
-			});
-  		}
-  		this.complete = function (jqXHR, textStatus) {
-  			this.status = textStatus;
-  		}
-  		this.complete = this.complete.bind(this);
-  		this.readPosts = function (data) {
-  			if (typeof data.images != 'undefined') {
-  				data = data.images; // updated api
-  			}
-  			
-  			if (data.length == 0) {
-  				console.log('No Posts');
-  			}
-  			else {
-  				console.log('new posts');
-  			}
-  			for (var i = 0; i < data.length; i++) {
-
-  				cache.set(data[i][settings.interface.postAttributes.image.id], data[i]);
-  			};
-  			if (this.parent.current == null) {
-  				this.parent.updateMainImage(data.shift());
-  				this.parent.status.updateImageNum(1, data.length);
-  				this.parent.preloader.load();
-  			}
-  			
-  			this.parent.status.updatePageNum(this.page, 'idk');
-  			//console.log(cache);
-  		}
-  		this.readPosts = this.readPosts.bind(this);
-  		this.send = function (method) {
-  			console.log('Requesting new posts');
-  			this.getPosts(this.endPoint.getURL(method, this.page));
-  		}
-  	}
-
-  	var Status = function (parent, statusID) {
-  		this.parent = parent;
-  		this.statusID = statusID;
-  		this.curPage = 0;
-  		this.maxPages = 0;
-  		this.curImage = 0;
-  		this.maxImages = 0;
-  		this.imageID = 0;
-  		this.comment_count = 0;
-  		this.tags = '';
-  		this.enabled = false;
-  		this.el = $(statusID);
-  		this.updatePageNum = function(cur, max) {
-  			this.curPage = cur;
-  			this.maxPages = max;
-  			this.draw();
-  		}
-  		this.updateImageNum = function(cur, max) {
-  			this.curImage = cur;
-  			this.maxImages = max;
-  			this.draw();
-  		}
-  		this.updateImageID = function(id) {
-  			this.imageID = id;
-  			this.draw();
-  		}
-  		this.updateCommentNum = function (count) {
-  			this.comment_count = count;
-  			this.draw();
-  		}
-  		this.updateTags = function (tags) {
-  			this.tags = tags;
-  			this.draw();
-  		}
-  		this.draw = function () {
-  			if (!this.enabled) return; 
-  			str = settings.strings;
-  			this.el.html(
-  			str.page + ' ' + this.curPage + '/' + this.maxPages
-  			+ '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
-  			+ str.image + ' ' + this.curImage + '/' + this.maxImages
-  			+ '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
-  			+ str.number_of_comments + ' ' + this.comment_count
-  			+ '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
-  			+ str.image_id + ' ' + this.imageID  
-  			+ '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
-  			+ str.link + ' <a href="' + settings.interface.url + settings.interface.posturl + this.imageID + '" >' + settings.interface.url + settings.interface.posturl + this.imageID + '</a>'
-  			+ '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
-  			+ str.tags + ' <span class="tags">' + this.tags + '</span>'
-  			);
-  		}
-  		this.toggle = function () {
-			if (this.enabled) {
-				this.el.addClass('visuallyhidden');
-				this.enabled = false;
+		function eventChainer (el, event, listener) {
+			var _arguments = arguments;
+			var _self = this;
+			console.log(el[event]);
+			if (el[event] != null) {
+				var old = el[event];
+				el[event] = function () {
+					listener.apply(_self, _arguments);
+					old.apply(_self, _arguments);;
+				}
 			}
 			else {
-				this.enabled = true;
-				this.draw();
-				this.el.removeClass('visuallyhidden');
+				el[event] = function () {
+					listener.apply(_self, _arguments);
+				}
 			}
 		}
-  	}
 
-  	var ImgInfo = function (parent, imginfoID) {
-  		this.parent = parent;
-  		this.imginfoID = imginfoID;
-  		this.el = $(this.imginfoID);
-  		this.enabled = false;
+		var OrderedSet = function () {
+			this.list = [];
+			this.pointer = 0;
+			this.needsSorting = true;
+			this.add = function (id) {
+				this.list.push(id);
+				this.needsSorting = true;
+			}
+			this.setPointer = function (id) {
+				for (var i = this.list.length - 1; i >= 0; i--) {
+					if (id == this.list[i]) {
+						this.pointer = i;
+						return true;
+					}
+				};
+				return false;
+			}
+			this.sort = function () {
+				return;
+				if (this.needsSorting) {
+					this.list = this.list.sort(function(a,b) {
+						if (a < b) {
+							return 1;
+						}
+						else if (a > b) { 
+							return -1;
+						}
+						return 0;
+					});
+					this.needsSorting = false;
+				}
+			}
+			this.getPointer = function () {
+				this.sort();
+				return this.pointer;
+			}
+			this.current = function () {
+				this.sort();
+				return this.list[this.pointer];
+			}
+			this.get = function (index) {
+				if (index < 0 || index > this.list.length - 1) {
+					return false;
+				}
+				this.sort();
+				return this.list[index];
+			}
+			this.next = function () {
+				if (this.pointer < this.list.length - 1) {
+					this.pointer++;
+					return true;
+				}
+				return false;
+			}
+			this.prev = function () {
+				if (this.pointer > 0) {
+					this.pointer--;
+					return true;
+				}
+				return false;
+			}
+			this.length = function () {
+				return this.list.length;
+			}
+			this.clear = function () {
+				this.list = [];
+				this.pointer = 0;
+			}
+		};
+
+		var cache = {
+			data: {},
+			ids: new OrderedSet(),
+			get: function (id) {
+				if (typeof this.data[id] !== 'undefined') {
+					return this.data[id];
+				}
+				else {
+					return 0;
+				}
+			},
+			set: function (id, data) {
+				if (typeof this.data[id] == 'undefined') {
+					this.ids.add(id);
+				}
+				this.data[id] = data;
+			},
+			length: function () {
+				return this.ids.length();
+			},
+			getCurrent: function () {
+				return this.get(this.ids.current());
+			},
+			clear: function () {
+				this.data = {};
+				this.ids.clear();
+			}
+		};
+
+		var PageRequest = function(parent, page, endPoint) {
+			if (typeof page == 'undefined') {
+				page = 0;
+			} 
+
+			this.parent = parent;
+			this.page = page;
+			this.endPoint = endPoint;
+			this.status = 'pennding';
+			this.getPosts = function(url) {
+
+				var url = 'CrossDomain.php?url=' + encodeURIComponent(url);
+
+				$.ajax({
+					dataType: "json",
+					url: url,
+					success: this.readPosts,
+					complete: this.complete
+			});
+			}
+			this.complete = function (jqXHR, textStatus) {
+				this.status = textStatus;
+			}
+			this.complete = this.complete.bind(this);
+			this.readPosts = function (data) {
+				if (typeof data.images != 'undefined') {
+					data = data.images; // updated api
+				}
+				
+				if (data.length == 0) {
+					console.log('No Posts');
+				}
+				else {
+					console.log('new posts');
+				}
+				for (var i = 0; i < data.length; i++) {
+
+					cache.set(data[i][settings.interface.postAttributes.image.id], data[i]);
+				};
+				if (this.parent.current == null) {
+					this.parent.updateMainImage(data.shift());
+					this.parent.status.updateImageNum(1, data.length);
+					this.parent.preloader.load();
+				}
+				
+				this.parent.status.updatePageNum(this.page, 'idk');
+				//console.log(cache);
+			}
+			this.readPosts = this.readPosts.bind(this);
+			this.send = function (method) {
+				console.log('Requesting new posts');
+				this.getPosts(this.endPoint.getURL(method, this.page));
+			}
+		}
+
+		var Status = function (parent, statusID) {
+			this.parent = parent;
+			this.statusID = statusID;
+			this.curPage = 0;
+			this.maxPages = 0;
+			this.curImage = 0;
+			this.maxImages = 0;
+			this.imageID = 0;
+			this.comment_count = 0;
+			this.tags = '';
+			this.enabled = false;
+			this.el = $(statusID);
+			this.updatePageNum = function(cur, max) {
+				this.curPage = cur;
+				this.maxPages = max;
+				this.draw();
+			}
+			this.updateImageNum = function(cur, max) {
+				this.curImage = cur;
+				this.maxImages = max;
+				this.draw();
+			}
+			this.updateImageID = function(id) {
+				this.imageID = id;
+				this.draw();
+			}
+			this.updateCommentNum = function (count) {
+				this.comment_count = count;
+				this.draw();
+			}
+			this.updateTags = function (tags) {
+				this.tags = tags;
+				this.draw();
+			}
+			this.draw = function () {
+				if (!this.enabled) return; 
+				str = settings.strings;
+				this.el.html(
+				str.page + ' ' + this.curPage + '/' + this.maxPages
+				+ '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
+				+ str.image + ' ' + this.curImage + '/' + this.maxImages
+				+ '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
+				+ str.number_of_comments + ' ' + this.comment_count
+				+ '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
+				+ str.image_id + ' ' + this.imageID	
+				+ '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
+				+ str.link + ' <a href="' + settings.interface.url + settings.interface.posturl + this.imageID + '" >' + settings.interface.url + settings.interface.posturl + this.imageID + '</a>'
+				+ '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
+				+ str.tags + ' <span class="tags">' + this.tags + '</span>'
+				);
+			}
+			this.toggle = function () {
+				if (this.enabled) {
+					this.el.addClass('visuallyhidden');
+					this.enabled = false;
+				}
+				else {
+					this.enabled = true;
+					this.draw();
+					this.el.removeClass('visuallyhidden');
+				}
+			}
+		}
+
+		var ImgInfo = function (parent, imginfoID) {
+			this.parent = parent;
+			this.imginfoID = imginfoID;
+			this.el = $(this.imginfoID);
+			this.enabled = false;
 		this.toggle = function () {
 			if (this.enabled) {
 				this.el.addClass('visuallyhidden');
@@ -329,49 +329,49 @@
 				this.enabled = true;
 			}
 		}
-  		this.update = function (img) {
-  			console.log(img);
-  			this.el.html(
-  				'<span class="label">' + settings.strings.uploader + '</span>' + img.uploader + '<br />'
-  				+ '<span class="label">' + settings.strings.description + '</span>' + img.description + '<br />' 
-  				+ '<span class="label">' + settings.strings.created_at + '</span>' + new DateFormater(img.created_at).format('g:i l Y') + '<br />' 
-  				+ '<span class="label">' + settings.strings.updated_at + '</span>' + new DateFormater(img.updated_at).format('g:i l Y') + '<br />' 
-  				+ '<span class="label">' + settings.strings.license + '</span>' + img.license + '<br />' 
-  				+ '<span class="label">' + settings.strings.score + '</span>' + img.score + '<br />' 
-  				+ '<span class="label">' + settings.strings.upvotes + '</span>' + img.upvotes + '<br />' 
-  				+ '<span class="label">' + settings.strings.downvotes + '</span>' + img.downvotes + '<br />' 
-  				+ '<span class="label">' + settings.strings.tags + '</span>' + img.tags + '<br />' 
-  				+ '<span class="label">' + settings.strings.comment_count + '</span>' + img.comment_count + '<br />' 
-  				+ '<span class="label">' + settings.strings.link + '</span>' + '<a href="' + settings.interface.url + settings.interface.posturl + img[settings.interface.postAttributes.image.id] + '" >' + settings.interface.url + settings.interface.posturl + img[settings.interface.postAttributes.image.id] + '</a>' + '<br />' 
-  				+ '<span class="label">' + settings.strings.source_url + '</span>' + '<a href="' + img.source_url + '" >' + img.source_url + '</a>' + '<br />'
-  			);
-  		}
-  	}
+			this.update = function (img) {
+				console.log(img);
+				this.el.html(
+					'<span class="label">' + settings.strings.uploader + '</span>' + img.uploader + '<br />'
+					+ '<span class="label">' + settings.strings.description + '</span>' + img.description + '<br />' 
+					+ '<span class="label">' + settings.strings.created_at + '</span>' + new DateFormater(img.created_at).format('g:i l Y') + '<br />' 
+					+ '<span class="label">' + settings.strings.updated_at + '</span>' + new DateFormater(img.updated_at).format('g:i l Y') + '<br />' 
+					+ '<span class="label">' + settings.strings.license + '</span>' + img.license + '<br />' 
+					+ '<span class="label">' + settings.strings.score + '</span>' + img.score + '<br />' 
+					+ '<span class="label">' + settings.strings.upvotes + '</span>' + img.upvotes + '<br />' 
+					+ '<span class="label">' + settings.strings.downvotes + '</span>' + img.downvotes + '<br />' 
+					+ '<span class="label">' + settings.strings.tags + '</span>' + img.tags + '<br />' 
+					+ '<span class="label">' + settings.strings.comment_count + '</span>' + img.comment_count + '<br />' 
+					+ '<span class="label">' + settings.strings.link + '</span>' + '<a href="' + settings.interface.url + settings.interface.posturl + img[settings.interface.postAttributes.image.id] + '" >' + settings.interface.url + settings.interface.posturl + img[settings.interface.postAttributes.image.id] + '</a>' + '<br />' 
+					+ '<span class="label">' + settings.strings.source_url + '</span>' + '<a href="' + img.source_url + '" >' + img.source_url + '</a>' + '<br />'
+				);
+			}
+		}
 
-  	var Endpoint = function (parent, interface) {
-  		this.parent = parent;
-  		this.interface = interface;
-  		this.getTags = function () {
-  			return this.parent.tags.val();
-  		}
-  		this.getURL = function (method, page) {
-        var eps = this.interface.endpoints;
-  			var url = this.interface.url + eps[method].page;
+		var Endpoint = function (parent, interface) {
+			this.parent = parent;
+			this.interface = interface;
+			this.getTags = function () {
+				return this.parent.tags.val();
+			}
+			this.getURL = function (method, page) {
+				var eps = this.interface.endpoints;
+				var url = this.interface.url + eps[method].page;
 
-	  		switch (method) {
-	  			case 'search':		
-	  				url += '?' + eps[method].queryArg + '='
-              + this.getTags().replace(' ', encodeURIComponent('+'))
-              + '&' + eps[method].pageArg + '=' + page;
-	  				break;
-	  			case 'index':
-			  		url += '?' + eps[method].pageArg + '=' + page;
-			  		break;
-	  		}
-	  		return  url;
-  		}
-  	}
-  	
+				switch (method) {
+					case 'search':
+						url += '?' + eps[method].queryArg + '='
+							+ this.getTags().replace(' ', encodeURIComponent('+'))
+							+ '&' + eps[method].pageArg + '=' + page;
+						break;
+					case 'index':
+						url += '?' + eps[method].pageArg + '=' + page;
+						break;
+				}
+				return url;
+			}
+		}
+		
 	var PreLoader = function (parent, id, imageNum, pageNum) {
 		this.parent = parent;
 		this.containter = $(id);
@@ -423,7 +423,7 @@
 		this.updateDisplay = function (items) {
 			var imgs = [];
 			for (var i = items.length - 1; i >= 0; i--) {
-				imgs.push("<img src=\"" + items[i].data + "\" />");	
+				imgs.push("<img src=\"" + items[i].data + "\" />");
 			};
 			this.containter.html(imgs.join(''));
 		}
@@ -477,19 +477,19 @@
 		}
 		this.run = function () {
 			$.ajax({
-		  		dataType: "json",
-	  			url: this.proccessedURL,
-		  		success: this.success,
-		  		complete: this.complete
+					dataType: "json",
+					url: this.proccessedURL,
+					success: this.success,
+					complete: this.complete
 			});
 		}
 		this.urlPreproccess = function (url) {
-      url = settings.interface.image_prefix + url;
+			url = settings.interface.image_prefix + url;
 			return 'CrossDomain.php?img=' + encodeURIComponent(url) + '&encodings=' + settings.interface.urlencodings;
 		}
 		this.proccessedURL = this.urlPreproccess(url);
 		this.success = function(data) {
-      console.log(data);
+			console.log(data);
 			if (this.tracker !== null) {
 				this.tracker.update(this.url, data.img, true);
 			}
@@ -595,25 +595,25 @@
 			}
 		}
 		this.get = function () {
-      this.blur();
+			this.blur();
 			this.value = this.input.val();
 			this.display.html(this.val());
 			this.parent.status.updateTags(this.val());
 		}
-    this.blur = function () {
-      this.input.blur();
-    }
+		this.blur = function () {
+			this.input.blur();
+		}
 		this.val = function () {
 			return this.value;
 		}
-    this.submit = function () {
-      var oldtags = this.val();
-      this.get();
-      if (oldtags != this.val()) {
-        parent.reset();
-        parent.next();
-      }
-    }
+		this.submit = function () {
+			var oldtags = this.val();
+			this.get();
+			if (oldtags != this.val()) {
+				parent.reset();
+				parent.next();
+			}
+		}
 	}
 
 	var DateFormater = function (datestr) {
@@ -663,11 +663,11 @@
 
 	var Mane = function (settings) {
 		this.page = 0;
-    this.cache = cache;
+		this.cache = cache;
 		this.enabledColorChange = false;
 		this.mainID = settings.mainID;
 		this.el = $(this.mainID);
-    this.imgEl = null;
+		this.imgEl = null;
 		this.height = settings.height;
 		this.width = settings.width;
 		this.current = null;
@@ -707,7 +707,7 @@
 
 			if (img_ratio > this_ratio) {
 				var img_width = Math.min(img.width, this.width);
-				var img_height = img_width / img_ratio;			
+				var img_height = img_width / img_ratio;
 			}
 			else {
 				var img_height = Math.min(img.height, this.height);
@@ -727,29 +727,29 @@
 			}
 		}
 		this.drawMainImage = this.drawMainImage.bind(this);
-    this.moveImage = function (dir, increment) {
-      this.imgEl.css('margin-' + dir, parseInt(this.imgEl.css('margin-' + dir).replace(/[^-\d\.]/g, '')) + increment + 'px');
-    }
-    this.moveImageUP = function () {
-      this.moveImage('top', -25);
-    }
-    this.moveImageDown = function () {
-      this.moveImage('top', +25);
-    }
-    this.moveImageLeft = function () {
-      this.moveImage('left', -25);
-    }
-    this.moveImageRight = function () {
-      this.moveImage('left', +25);
-    }
-    this.zoomIn = function () {
-      this.zoom('in', 10);
-    }
-    this.zoomOut = function () {
-      this.zoom('out', 10);
-    }
+		this.moveImage = function (dir, increment) {
+			this.imgEl.css('margin-' + dir, parseInt(this.imgEl.css('margin-' + dir).replace(/[^-\d\.]/g, '')) + increment + 'px');
+		}
+		this.moveImageUP = function () {
+			this.moveImage('top', -25);
+		}
+		this.moveImageDown = function () {
+			this.moveImage('top', +25);
+		}
+		this.moveImageLeft = function () {
+			this.moveImage('left', -25);
+		}
+		this.moveImageRight = function () {
+			this.moveImage('left', +25);
+		}
+		this.zoomIn = function () {
+			this.zoom('in', 10);
+		}
+		this.zoomOut = function () {
+			this.zoom('out', 10);
+		}
 		this.zoom = function (dir, percent) {
-      if (this.current === null) { return false; }
+			if (this.current === null) { return false; }
 
 			var width = this.imgEl.width();
 
@@ -765,8 +765,8 @@
 			}
 
 			this.imgEl.width(new_width);
-			this.imgEl.height(new_width / (this.current.width / this.current.height));	
-      return true;
+			this.imgEl.height(new_width / (this.current.width / this.current.height));
+			return true;
 		}
 		this.toggleComments = function() {
 			this.comments.toggle();
@@ -799,7 +799,7 @@
 		this.prev = function () {
 			if (cache.ids.prev()) {
 				this.updateMainImage(cache.getCurrent());
-				this.status.updateImageNum(cache.ids.getPointer()  + 1, cache.length());
+				this.status.updateImageNum(cache.ids.getPointer() + 1, cache.length());
 			}
 			else {
 				this.prevPage();
@@ -807,7 +807,7 @@
 		}
 		this.getPage = function () {
 			if (this.request != null && this.request.status == 'pennding') {
-				return false;		
+				return false;
 			}
 			var method = 'index';
 			if (this.tags.val() != '') {
@@ -820,7 +820,7 @@
 		this.nextPage = function () {
 			this.page++;
 			if (this.getPage()) {
-				return true;	
+				return true;
 			}
 			else {
 				this.page--;
@@ -842,88 +842,88 @@
 			this.page = 0;
 		}
 	}
-  
-  var keyMapper = function () {
-    this.mappings = {};
-    this.addMapping = function (mapping) {
-      if (mapping.length > 2) {
-        mapping[1] = mapping[1][mapping[2]].bind(mapping[1]);
-      }
-      if (typeof mapping[1] !== "function") {
-        throw new TypeError(mapping[1] + " is not a function");
-      }
-      if (typeof mapping[0] === "string") {
-        mapping[0] = mapping[0].charCodeAt(0);
-      }
-      this.mappings[mapping[0]] = mapping[1];
-    }
-    this.addMappings = function(mappings) {
-      mappings.map(this.addMapping, this);
-    }
-    this.reacteToEvent = function(event) {
-      var key = event.keyCode;
+	
+	var keyMapper = function () {
+		this.mappings = {};
+		this.addMapping = function (mapping) {
+			if (mapping.length > 2) {
+				mapping[1] = mapping[1][mapping[2]].bind(mapping[1]);
+			}
+			if (typeof mapping[1] !== "function") {
+				throw new TypeError(mapping[1] + " is not a function");
+			}
+			if (typeof mapping[0] === "string") {
+				mapping[0] = mapping[0].charCodeAt(0);
+			}
+			this.mappings[mapping[0]] = mapping[1];
+		}
+		this.addMappings = function(mappings) {
+			mappings.map(this.addMapping, this);
+		}
+		this.reacteToEvent = function(event) {
+			var key = event.keyCode;
 
-      if (key in this.mappings) {
-        this.mappings[key]();
-      }
-    }
-  }
+			if (key in this.mappings) {
+				this.mappings[key]();
+			}
+		}
+	}
 
 
 	function main() {
 		var mane = new Mane(settings);
-    window.derpibrow = mane;
-		mane.next(); // init load		
+		window.derpibrow = mane;
+		mane.next(); // init load
 		
-  	eventChainer(window, 'onresize', function() {
-  		updateDimentions(mane);
-  	});
+		eventChainer(window, 'onresize', function() {
+			updateDimentions(mane);
+		});
 
-    var keyMappings = [
-      ['B', mane, 'toggleBackgroundColor'],
-      ['C', mane, 'toggleComments'],
-      ['I', mane, 'toggleInfo'],
-      ['J', mane, 'prev'],
-      ['K', mane, 'next'],
-      ['S', mane, 'toggleStatus'],
-      ['T', mane, 'toggleTags'],
-      [40, mane, 'moveImageUP'], // up
-      [37, mane, 'moveImageRight'], // right
-      [38, mane, 'moveImageDown'], // down
-      [39, mane, 'moveImageLeft'], // left
-      ['Z', mane, 'zoomIn'],
-      ['X', mane, 'zoomOut'],
-      [27, mane.tags, 'blur'],  // Esc
-      [13, mane.tags, 'submit'] // Enter
-    ];
-    keymapper = new keyMapper();
-    keymapper.addMappings(keyMappings);
+		var keyMappings = [
+			['B', mane, 'toggleBackgroundColor'],
+			['C', mane, 'toggleComments'],
+			['I', mane, 'toggleInfo'],
+			['J', mane, 'prev'],
+			['K', mane, 'next'],
+			['S', mane, 'toggleStatus'],
+			['T', mane, 'toggleTags'],
+			[40, mane, 'moveImageUP'], // up
+			[37, mane, 'moveImageRight'], // right
+			[38, mane, 'moveImageDown'], // down
+			[39, mane, 'moveImageLeft'], // left
+			['Z', mane, 'zoomIn'],
+			['X', mane, 'zoomOut'],
+			[27, mane.tags, 'blur'], // Esc
+			[13, mane.tags, 'submit'] // Enter
+		];
+		keymapper = new keyMapper();
+		keymapper.addMappings(keyMappings);
 
-    var doc = $(document);
+		var doc = $(document);
 
 		doc.keydown(function (event) {
-      if (event.target.tagName.toLowerCase() == 'input'
-          && event.keyCode >= 65
-          && event.keyCode <= 90) {
-  			return; // Don't catch text input
+			if (event.target.tagName.toLowerCase() == 'input'
+					&& event.keyCode >= 65
+					&& event.keyCode <= 90) {
+				return; // Don't catch text input
 			}
 			else {
 				keymapper.reacteToEvent(event);
 			}
 		});
 
-    doc.mousewheel(function (event, delta) {
-        if (delta > 0) {
-          mane.zoomIn();
-        }
-        else {
-          mane.zoomOut();
-        }
-    });
+		doc.mousewheel(function (event, delta) {
+				if (delta > 0) {
+					mane.zoomIn();
+				}
+				else {
+					mane.zoomOut();
+				}
+		});
 	}
 
 	main();
 
-  });
+	});
 }) (jQuery);
  
