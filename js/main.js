@@ -557,9 +557,8 @@
 			if (img.comment_count > 0) {
 				for (var i = img.comments.length - 1; i >= 0; i--) {
 					var comment = img.comments[i];
-					var date = new Date(comment.posted_at);
 					commentHTML += '<div class="comment"><span class="author">' + comment.author
-					+ '</span><span class="date">' + date.getHours() + ':' + date.getMinutes() + ' ' + days[date.getDay()]
+					+ '</span><span class="date">' + new DateFormater(comment.posted_at).format('g:i l')
 					+ '</span><br /><span class="body">' + this.commentPreProccess(comment.body)
 					+ '</span></div>';
 				};
