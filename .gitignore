@@ -1,4 +1,10 @@
 img/*.png
+img/*.PNG
 img/*.jpg
+img/*.JPG
 img/*.jpeg
 img/*.gif
+img/*.GIF
+img/*.swf
+img/*.svg
+*.*~
