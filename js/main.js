@@ -10,6 +10,42 @@
 																						$(window).scrollLeft()) + "px");
 		return this;
 	}
+
+	var Cookie =  {
+		get: function (name) {
+			var nameEQ = name + "=";
+			var ca = document.cookie.split(';');
+			for(var i=0;i < ca.length;i++) {
+				var c = ca[i];
+				while (c.charAt(0)==' ') c = c.substring(1,c.length);
+				if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+			}
+			return null;
+		},
+		set: function (name,value,days) {
+			if (days) {
+				var date = new Date();
+				date.setTime(date.getTime()+(days*24*60*60*1000));
+				var expires = "; expires="+date.toGMTString();
+			}
+			else var expires = "";
+			document.cookie = name+"="+value+expires+"; path=/";
+		},
+		del: function (name) {
+			createCookie(name,"",-1);
+		},
+		toggle: function (name) {
+			var val = this.get(name);
+			if (val == '1') {
+				val = '0';
+			}
+			else {
+				val = '1';
+			}
+			this.set(name, val);
+			return val;
+		}
+	}
 		var interfaces = {
 			derpiboo: {
 				url: 'http://derpibooru.org',
@@ -92,22 +128,40 @@
 				}
 			}
 		}
+		var storage = {
+			set: function (key, val) {
+				if (!!window.localStorage) {
+					window.localStorage.setItem(key, JSON.stringify(val));
+				}
+			},
+			get: function (key) {
+				if (!!window.localStorage) {
+					return JSON.parse(window.localStorage.getItem(key));
+				}
+				return [];
+			}
+		}
 
 		var OrderedSet = function () {
 			this.list = [];
 			this.pointer = 0;
 			this.needsSorting = true;
+			this.load = function (SetName) {
+				this.list = storage.get(SetName);
+			}
+			this.save = function (SetName) {
+				storage.set(SetName);	
+			}
 			this.add = function (id) {
 				this.list.push(id);
 				this.needsSorting = true;
 			}
-			this.setPointer = function (id) {
-				for (var i = this.list.length - 1; i >= 0; i--) {
-					if (id == this.list[i]) {
-						this.pointer = i;
-						return true;
-					}
-				};
+			this.setPointer = function (i) {
+				if (!!this.list[i]) {
+					this.pointer = i;
+					return true;
+				}
+				
 				return false;
 			}
 			this.sort = function () {
@@ -165,6 +219,7 @@
 
 		var cache = {
 			data: {},
+			setName: 'ids',
 			ids: new OrderedSet(),
 			get: function (id) {
 				if (typeof this.data[id] !== 'undefined') {
@@ -186,9 +241,18 @@
 			getCurrent: function () {
 				return this.get(this.ids.current());
 			},
+			setCurrent: function (imageNum) {
+				return this.ids.setPointer(imageNum);
+			},
 			clear: function () {
 				this.data = {};
 				this.ids.clear();
+			},
+			load: function () {
+				this.ids.load(this.setName);
+			},
+			save: function () {
+				this.ids.save(this.setName);
 			}
 		};
 
@@ -210,7 +274,7 @@
 					url: url,
 					success: this.readPosts,
 					complete: this.complete
-			});
+				});
 			}
 			this.complete = function (jqXHR, textStatus) {
 				this.status = textStatus;
@@ -228,9 +292,12 @@
 					console.log('new posts');
 				}
 				for (var i = 0; i < data.length; i++) {
-
 					cache.set(data[i][settings.interface.postAttributes.image.id], data[i]);
 				};
+				cache.save();
+				if (this.status == 'disabled') {
+					return;
+				}
 				if (this.parent.current == null) {
 					this.parent.updateMainImage(data.shift());
 					this.parent.status.updateImageNum(1, data.length);
@@ -241,6 +308,9 @@
 				//console.log(cache);
 			}
 			this.readPosts = this.readPosts.bind(this);
+			this.disable = function () {
+				this.status = 'disabled';
+			}
 			this.send = function (method) {
 				console.log('Requesting new posts');
 				this.getPosts(this.endPoint.getURL(method, this.page));
@@ -768,29 +838,61 @@
 			this.imgEl.height(new_width / (this.current.width / this.current.height));
 			return true;
 		}
+		this.initializeSettings = function () {
+			var toggles = ['toggleComments', 'toggleStatus', 'toggleTags', 'toggleInfo', 'toggleBackgroundColor'];
+			for (var i = toggles.length - 1; i >= 0; i--) {
+				var toggle = toggles[i];
+				var bool = Cookie.get(toggle);
+
+				if (bool == '1') {
+					this[toggle]();
+					Cookie.set(toggle, bool);
+				}
+			};
+			var Page = Cookie.get('page');
+			if (Page !== null) {
+				Page = parseInt(Page);
+				for (var i = 0; i < Page; i++) {
+					var PR = new PageRequest(i);
+					PR.disable();
+					PR.send();
+				};
+		  }
+			var imageNum = Cookie.get('imageNum');
+			if (imageNum !== null) {
+				imageNum = parseInt(imageNum);
+				cache.load();
+				cache.setCurrent(imageNum);
+			}
+		}
 		this.toggleComments = function() {
 			this.comments.toggle();
+			Cookie.toggle('toggleComments');
 		}
 		this.toggleStatus = function() {
 			this.status.toggle();
+			Cookie.toggle('toggleStatus');
 		}
 		this.toggleTags = function() {
 			this.tags.toggle();
+			Cookie.toggle('toggleTags');
 		}
 		this.toggleInfo = function () {
 			this.imgInfo.toggle();
+			Cookie.toggle('toggleInfo');
 		}
 		this.toggleBackgroundColor = function() {
 			if (this.enabledColorChange) {
 				$('body').css('background-color', settings.backgroundColor);
 			}
 			this.enabledColorChange = !this.enabledColorChange;
+			Cookie.toggle('toggleBackgroundColor');
 		}
 		this.next = function () {
 			if (cache.ids.next()) {
 				this.updateMainImage(cache.getCurrent());
 				this.preloader.load();
-				this.status.updateImageNum(cache.ids.getPointer() + 1, cache.length());
+				this.imageChange();
 			}
 			else {
 				this.nextPage();
@@ -799,11 +901,16 @@
 		this.prev = function () {
 			if (cache.ids.prev()) {
 				this.updateMainImage(cache.getCurrent());
-				this.status.updateImageNum(cache.ids.getPointer() + 1, cache.length());
+				this.imageChange();
 			}
 			else {
 				this.prevPage();
 			}
+		}
+		this.imageChange = function () {
+			var imageNum = cache.ids.getPointer() + 1;
+			this.status.updateImageNum(imageNum, cache.length());
+			Cookie.set('imageNum', imageNum);
 		}
 		this.getPage = function () {
 			if (this.request != null && this.request.status == 'pennding') {
@@ -813,27 +920,34 @@
 			if (this.tags.val() != '') {
 				method = 'search';
 			}
+			if (this.request != null) {
+				this.request.disable();
+			}
 			this.request = new PageRequest(this, this.page, this.endPoint);
 			this.request.send(method);
 			return true;
 		}
 		this.nextPage = function () {
-			this.page++;
+			this.changePage(1);
 			if (this.getPage()) {
 				return true;
 			}
 			else {
-				this.page--;
+				this.changePage(-1);
 				return false
 			}
 		}
 		this.prevPage = function () {
 			if (this.page > 0) {
-				this.page--;
+				this.changePage(-1);
 				this.getPage();
 				return true;
 			}
 			return false;
+		}
+		this.changePage = function (amount) {
+			this.page + amount;
+			Cookie.set('page', this.page);
 		}
 		this.reset = function () {
 			cache.clear();
@@ -841,6 +955,7 @@
 			this.request = null;
 			this.page = 0;
 		}
+		this.initializeSettings();
 	}
 	
 	var keyMapper = function () {

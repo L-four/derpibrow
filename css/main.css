@@ -146,6 +146,10 @@ body {
     clear: right;
     width: 100%;
 }
+#comments .body a,
+#comments .body a:link {
+    color: #CCC;
+}
 #tags {
     position: fixed;
     right: 1px;
